@@ -21,8 +21,8 @@
 #include <list>
 #include <boost/utility.hpp>
 #include <boost/array.hpp>
-
-#define NUM_LETTERS 128
+// 128 - 5 - 64 = 59
+#define NUM_LETTERS 59
 
 namespace YouCompleteMe {
 
