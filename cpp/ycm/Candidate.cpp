@@ -26,21 +26,6 @@ using boost::algorithm::is_lower;
 
 namespace YouCompleteMe {
 
-namespace {
-
-LetterNode *FirstUppercaseNode( const std::list< LetterNode *> &list ) {
-  LetterNode *node = NULL;
-  foreach( LetterNode * current_node, list ) {
-    if ( current_node->LetterIsUppercase() ) {
-      node = current_node;
-      break;
-    }
-  }
-  return node;
-}
-
-} // unnamed namespace
-
 std::string GetWordBoundaryChars( const std::string &text ) {
   std::string result;
 
@@ -79,42 +64,76 @@ Candidate::Candidate( const std::string &text )
   text_( text ),
   word_boundary_chars_( GetWordBoundaryChars( text ) ),
   text_is_lowercase_( all( text, is_lower() ) ),
-  letters_present_( LetterBitsetFromString( text ) ),
-  root_node_( new LetterNode( text ) ) {
+  letters_present_( LetterBitsetFromString( text ) )
+{
 }
 
 
 Result Candidate::QueryMatchResult( const std::string &query,
                                     bool case_sensitive ) const {
-  LetterNode *node = root_node_.get();
   int index_sum = 0;
+  std::string::const_iterator query_iter = query.begin(), query_end = query.end();
+  if ( query_iter == query_end) 
+    return Result( true, &text_, text_is_lowercase_, index_sum,
+        word_boundary_chars_, query );
 
-  foreach ( char letter, query ) {
-    const std::list< LetterNode *> *list = node->NodeListForLetter( letter );
+  int index = 0, candidate_len = text_.size();
 
-    if ( !list )
-      return Result( false );
+  if (case_sensitive){
+    // only case sensitive when the query char is upper
+      
+    // When the query letter is uppercase, then we force an uppercase match
+    // but when the query letter is lowercase, then it can match both an
+    // uppercase and a lowercase letter. This is by design and it's much
+    // better than forcing lowercase letter matches.
+    char candidate_char, query_char;
+    bool query_char_not_upper = false;
 
-    if ( case_sensitive ) {
-      // When the query letter is uppercase, then we force an uppercase match
-      // but when the query letter is lowercase, then it can match both an
-      // uppercase and a lowercase letter. This is by design and it's much
-      // better than forcing lowercase letter matches.
-      node = IsUppercase( letter ) ?
-             FirstUppercaseNode( *list ) :
-             list->front();
+    query_char = *query_iter;
+    if ( !IsUppercase(query_char) ) query_char_not_upper = true;
+    
+    while (index < candidate_len){
+      candidate_char = text_[index];
+      if ( query_char_not_upper && IsUppercase(candidate_char) ) 
+        candidate_char += kUpperToLowerCount;
 
-      if ( !node )
-        return Result( false );
-    } else {
-      node = list->front();
+      if ( candidate_char == query_char ){
+        index_sum += index;
+        ++query_iter;
+        if ( query_iter == query_end ) 
+          return Result( true, &text_, text_is_lowercase_, index_sum,
+              word_boundary_chars_, query );
+
+        query_char = *query_iter;
+        if ( !IsUppercase(query_char) ) query_char_not_upper = true;
+        else query_char_not_upper = false;
+      }
+      ++index;
     }
+  }else{
+    char candidate_char, query_char;
 
-    index_sum += node->Index();
+    query_char = *query_iter;
+    if ( IsUppercase(query_char) ) query_char += kUpperToLowerCount;
+
+    while (index < candidate_len){
+      candidate_char = text_[index];
+      if ( IsUppercase(candidate_char) ) candidate_char += kUpperToLowerCount;
+
+      if (candidate_char == query_char){
+        index_sum += index;
+        ++query_iter;
+        if ( query_iter == query_end ) 
+          return Result( true, &text_, text_is_lowercase_, index_sum,
+              word_boundary_chars_, query );
+
+        query_char = *query_iter;
+        if ( IsUppercase(query_char) ) query_char += kUpperToLowerCount;
+      }
+      ++index;
+    }
   }
-
-  return Result( true, &text_, text_is_lowercase_, index_sum,
-                 word_boundary_chars_, query );
+  return Result(false);
 }
 
 } // namespace YouCompleteMe

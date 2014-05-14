@@ -29,9 +29,12 @@ namespace YouCompleteMe {
 class LetterNode;
 
 extern const int kNumLetters;
+extern const int kUpperToLowerCount;
 
 int IndexForChar( char letter );
-bool IsUppercase( char letter );
+inline bool IsUppercase( char letter ){
+  return 'A' <= letter && letter <= 'Z';    
+}
 
 class LetterNodeListMap : boost::noncopyable {
 public:

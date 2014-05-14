@@ -61,7 +61,7 @@ private:
   std::string word_boundary_chars_;
   bool text_is_lowercase_;
   Bitset letters_present_;
-  boost::scoped_ptr< LetterNode > root_node_;
+  // boost::scoped_ptr< LetterNode > root_node_;
 };
 
 } // namespace YouCompleteMe
