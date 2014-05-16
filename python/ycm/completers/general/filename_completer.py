@@ -69,6 +69,9 @@ class FilenameCompleter( Completer ):
   def ShouldUseNowInner( self, request_data ):
     start_column = request_data[ 'start_column' ] - 1
     current_line = request_data[ 'line_value' ]
+    # line is unicode, need to convert to utf-8 byteArrays
+    current_line = current_line.encode('utf-8')
+
     return ( start_column and ( current_line[ start_column - 1 ] == '/' or
              self.AtIncludeStatementStart( request_data ) ) )
 
